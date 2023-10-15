@@ -13,23 +13,32 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+const (
+	DDMMYYYYhhmmss = "2006-01-02 15:04:05"
+	DDMMYYYY       = "2006-01-02"
+)
+
 var emailNotifies = make(map[string]string)
 
 func main() {
+	fmt.Println("Init Check Websites")
+	fmt.Println("Load .env")
 	loadEnv()
 	urls := replaceSplitString(os.Getenv("URLS"), "\n", ",")
 
+	fmt.Println("Start Process")
 	for range time.Tick(time.Second * 10) {
-		fmt.Println("Check Websites")
+		fmt.Println("Check Websites - " + time.Now().UTC().Format(DDMMYYYYhhmmss))
 		for _, url := range urls {
 			resp, err := http.Get(url)
 			if err != nil {
-				sendEmail(url)
+				sendEmail(url, err.Error())
+				fmt.Println(err.Error(), ":", url)
+				continue
 			} else if !IsSuccessStatusCode(resp.StatusCode) {
 				sendEmail(url, resp.Status)
-			} else {
-				fmt.Println(resp.StatusCode, ":", url)
 			}
+			fmt.Println(resp.Status, ":", url)
 		}
 		fmt.Println()
 	}
@@ -40,7 +49,7 @@ func IsSuccessStatusCode(statusCode int) bool {
 }
 
 func isValidToSendEmail(url string) bool {
-	dateToday := time.Now().UTC().Format("2006-01-02")
+	dateToday := time.Now().UTC().Format(DDMMYYYY)
 	if emailNotifies[url] == "" || emailNotifies[url] < dateToday {
 		emailNotifies[url] = dateToday
 		return true
@@ -48,7 +57,7 @@ func isValidToSendEmail(url string) bool {
 	return false
 }
 
-func sendEmail(url string, statusCodeOptional ...string) {
+func sendEmail(url string, error string) {
 	if !isValidToSendEmail(url) {
 		return
 	}
@@ -62,13 +71,7 @@ func sendEmail(url string, statusCodeOptional ...string) {
 	}
 	from := os.Getenv("FROM")
 	to := replaceSplitString(os.Getenv("TO"), "\n", ";")
-
-	statusCodeMessage := ""
-	if len(statusCodeOptional) > 0 {
-		statusCode := statusCodeOptional[0]
-		statusCodeMessage = " with Status Code " + statusCode + " : "
-	}
-	message := "[ALERT][Site is down] " + statusCodeMessage + url
+	message := "[ALERT WEBSITE] " + url
 
 	newMessage := gomail.NewMessage()
 	newMessage.SetHeaders(map[string][]string{
@@ -76,7 +79,7 @@ func sendEmail(url string, statusCodeOptional ...string) {
 		"To":      to,
 		"Subject": {message},
 	})
-	newMessage.SetBody("text/html", message)
+	newMessage.SetBody("text/html", "Error: "+error+" : "+url)
 	newDialer := gomail.NewDialer(smtpHost, port, username, password)
 	err := newDialer.DialAndSend(newMessage)
 	if err != nil {
