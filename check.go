@@ -53,7 +53,7 @@ func sendEmail(url string, statusCodeOptional ...string) {
 		return
 	}
 
-	username := os.Getenv("EMAIL")
+	username := os.Getenv("USER_EMAIL")
 	password := os.Getenv("PASSWORD")
 	smtpHost := os.Getenv("HOST")
 	port, errConversion := strconv.Atoi(os.Getenv("PORT"))
