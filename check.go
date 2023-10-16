@@ -25,9 +25,13 @@ func main() {
 	fmt.Println("Load .env")
 	loadEnv()
 	urls := replaceSplitString(os.Getenv("URLS"), "\n", ",")
+	seconds, errConversion := strconv.Atoi(os.Getenv("SECONDS_TO_CHECK"))
+	if errConversion != nil {
+		port = 300
+	}
 
 	fmt.Println("Start Process")
-	for range time.Tick(time.Second * 10) {
+	for range time.Tick(time.Second * seconds) {
 		fmt.Println("Check Websites - " + time.Now().UTC().Format(DDMMYYYYhhmmss))
 		for _, url := range urls {
 			resp, err := http.Get(url)
