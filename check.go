@@ -27,7 +27,7 @@ func main() {
 	urls := replaceSplitString(os.Getenv("URLS"), "\n", ",")
 	seconds, errConversion := strconv.Atoi(os.Getenv("SECONDS_TO_CHECK"))
 	if errConversion != nil {
-		port = 300
+		seconds = 300
 	}
 
 	fmt.Println("Start Process")
